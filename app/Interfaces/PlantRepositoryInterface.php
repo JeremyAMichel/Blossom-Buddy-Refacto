@@ -15,6 +15,8 @@ interface PlantRepositoryInterface
     public function createPlant(array $data);
 
     public function updatePlant(int $id, array $data);
+   
+    public function updateOrCreatePlant(array $api_id, array $plantData);
 
     public function deletePlant(int $id);
 }

@@ -36,6 +36,11 @@ class PlantRepository implements PlantRepositoryInterface
         return $plant;
     }
 
+    public function updateOrCreatePlant(array $api_id, array $plantData)
+    {
+        return Plant::updateOrCreate($api_id, $plantData);
+    }
+
     public function deletePlant(int $id)
     {
         try {

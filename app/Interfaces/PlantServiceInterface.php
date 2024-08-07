@@ -2,8 +2,7 @@
 
 namespace App\Interfaces;
 
-
 interface PlantServiceInterface
 {
-    public function fetchAndStorePlants();
+    public function fetchAndStorePlants(PlantRepositoryInterface $plantRepository): void;
 }

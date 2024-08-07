@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Interfaces\PlantRepositoryInterface;
 use App\Interfaces\PlantServiceInterface;
 use Illuminate\Support\Facades\Http;
 use App\Models\Plant;
@@ -12,7 +13,7 @@ class PlantService implements PlantServiceInterface
 {
     protected $apiUrl = 'https://perenual.com/api/species/details';
 
-    public function fetchAndStorePlants()
+    public function fetchAndStorePlants(PlantRepositoryInterface $plantRepository): void
     {
         $apiKey = env('API_PERENUAL_KEY');
 
@@ -38,7 +39,7 @@ class PlantService implements PlantServiceInterface
                     'maintenance' => $data['maintenance'],
                 ];
 
-                Plant::updateOrCreate(['api_id' => $data['id']], $plantData);
+                $plantRepository->updateOrCreatePlant(['api_id' => $data['id']], $plantData);
             } else {
                 Log::error("Failed to fetch plant with ID {$id}: " . $response->body());
             }
