@@ -10,6 +10,8 @@ interface PlantRepositoryInterface
 
     public function getPlantById(int $id);
 
+    public function getPlantLikeCommonName(string $commonName);
+
     public function createPlant(array $data);
 
     public function updatePlant(int $id, array $data);

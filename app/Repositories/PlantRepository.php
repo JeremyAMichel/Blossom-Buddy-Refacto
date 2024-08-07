@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Interfaces\PlantRepositoryInterface;
 use App\Models\Plant;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PlantRepository implements PlantRepositoryInterface
 {
@@ -16,6 +17,11 @@ class PlantRepository implements PlantRepositoryInterface
     public function getPlantById(int $id)
     {
         return Plant::findOrFail($id);
+    }
+
+    public function getPlantLikeCommonName(string $commonName)
+    {
+        return Plant::where('common_name', 'LIKE', '%' . $commonName . '%')->firstOrFail();
     }
 
     public function createPlant(array $data)
@@ -32,7 +38,12 @@ class PlantRepository implements PlantRepositoryInterface
 
     public function deletePlant(int $id)
     {
-        $plant = Plant::findOrFail($id);
+        try {
+            $plant = Plant::findOrFail($id);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => 'Plant not found'], 404);
+        }
+
         $plant->delete();
     }
 }

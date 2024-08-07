@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\PlantRepositoryInterface;
 use App\Models\Plant;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -33,9 +34,9 @@ class PlantController extends Controller
      *       )
      *     )
      */
-    public function index(): JsonResponse
+    public function index(PlantRepositoryInterface $plantRepository): JsonResponse
     {
-        return response()->json(Plant::all());
+        return response()->json($plantRepository->getAllPlants());
     }
 
 
@@ -55,9 +56,9 @@ class PlantController extends Controller
      *     )
      * )
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, PlantRepositoryInterface $plantRepository): JsonResponse
     {
-        $plant = Plant::create($request->all());
+        $plant = $plantRepository->createPlant($request->all());
 
         return response()->json($plant, 201);
     }
@@ -89,9 +90,10 @@ class PlantController extends Controller
      *     )
      * )
      */
-    public function show(string $common_name): JsonResponse
+    public function show(string $common_name, PlantRepositoryInterface $plantRepository): JsonResponse
     {
-        $plant = Plant::where('common_name', 'LIKE', '%' . $common_name . '%')->firstOrFail();
+        $plant = $plantRepository->getPlantLikeCommonName($common_name);
+
         return response()->json($plant);
     }
 
@@ -130,7 +132,7 @@ class PlantController extends Controller
      *     )
      * )
      */
-    public function update(Request $request, string $common_name): JsonResponse
+    public function update(Request $request, string $common_name, PlantRepositoryInterface $plantRepository): JsonResponse
     {
         $validatedData = $request->validate([
             'common_name' => 'sometimes|string|max:255',
@@ -140,7 +142,7 @@ class PlantController extends Controller
         ]);
 
         try {
-            $plant = Plant::where('common_name', 'LIKE', '%' . $common_name . '%')->firstOrFail();
+            $plant = $plantRepository->getPlantLikeCommonName($common_name);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Plant not found'], 404);
         }
@@ -194,15 +196,9 @@ class PlantController extends Controller
      *     ),
      * )
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(int $id, PlantRepositoryInterface $plantRepository): JsonResponse
     {
-        try {
-            $plant = Plant::findOrFail($id);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'Plant not found'], 404);
-        }
-
-        $plant->delete();
+        $plantRepository->deletePlant($id);
 
         return response()->json(null, 204);
     }

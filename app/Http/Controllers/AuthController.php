@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Interfaces\AuthControllerInterface;
+use App\Interfaces\UserRepositoryInterface;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,7 +52,7 @@ class AuthController extends Controller implements AuthControllerInterface
      *     )
      * )
      */
-    public function register(Request $request): JsonResponse
+    public function register(Request $request, UserRepositoryInterface $userRepository): JsonResponse
     {
         $validatedData = $request->validate([
             'firstName' => 'required|max:55',
@@ -62,7 +63,7 @@ class AuthController extends Controller implements AuthControllerInterface
 
         $validatedData['password'] = Hash::make($request->password);
 
-        $user = User::create($validatedData);
+        $user = $userRepository->createUser($validatedData);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -103,7 +104,7 @@ class AuthController extends Controller implements AuthControllerInterface
      *     )
      * )
      */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, UserRepositoryInterface $userRepository): JsonResponse
     {
         $request->validate([
             'email' => 'required|email',
@@ -113,8 +114,8 @@ class AuthController extends Controller implements AuthControllerInterface
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
-
-        $user = User::where('email', $request->email)->firstOrFail();
+        
+        $user = $userRepository->getUserByEmail($request->email);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json(['access_token' => $token, 'token_type' => 'Bearer']);

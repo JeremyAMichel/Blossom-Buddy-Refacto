@@ -10,6 +10,8 @@ interface UserRepositoryInterface
 
     public function getUserById(int $id);
 
+    public function getUserByEmail(string $email);
+
     public function createUser(array $data);
 
     public function updateUser(int $id, array $data);
