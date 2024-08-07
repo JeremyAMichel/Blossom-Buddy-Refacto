@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\PlantRepositoryInterface;
 use App\Interfaces\WeatherServiceInterface;
 use App\Jobs\SendWateringReminder;
 use App\Models\Plant;
@@ -81,7 +82,7 @@ class UserPlantController extends Controller
      *      )
      * )
      */
-    public function addPlantUser(Request $request, WeatherServiceInterface $weatherService): JsonResponse
+    public function addPlantUser(Request $request, WeatherServiceInterface $weatherService, PlantRepositoryInterface $plantRepository): JsonResponse
     {
 
         $validated = $request->validate([
@@ -94,7 +95,8 @@ class UserPlantController extends Controller
          */
         $user = $request->user();
 
-        $plant = Plant::where('common_name', 'LIKE', '%' . $validated['plant_name'] . '%')->firstOrFail();
+        $plant = $plantRepository->getPlantLikeCommonName($validated['plant_name']);
+
         if (!$plant) {
             return response()->json(['error' => 'Plant not found'], 404);
         }
