@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Interfaces\PlantRepositoryInterface;
+use App\Interfaces\UserPlantServiceInterface;
 use App\Interfaces\WateringStrategyInterface;
 use App\Interfaces\WeatherServiceInterface;
-use App\Jobs\SendWateringReminder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -82,7 +82,7 @@ class UserPlantController extends Controller
      *      )
      * )
      */
-    public function addPlantUser(Request $request, WeatherServiceInterface $weatherService, PlantRepositoryInterface $plantRepository, WateringStrategyInterface $wateringStrategy): JsonResponse
+    public function addPlantUser(Request $request, WeatherServiceInterface $weatherService, PlantRepositoryInterface $plantRepository, WateringStrategyInterface $wateringStrategy, UserPlantServiceInterface $userPlantServiceInterface): JsonResponse
     {
 
         $validated = $request->validate([
@@ -103,20 +103,8 @@ class UserPlantController extends Controller
 
         $city = $validated['city'];
 
-        $resultDays = $wateringStrategy->calculateDaysForWeatherService($plant);
-        
-        // Use the weather service to get the forecast for the city
-        $weatherData = $weatherService->getWeatherForecast($city, $resultDays['daysForWeatherService']);
 
-        $hoursUntilNextWatering = $wateringStrategy->calculateHoursUntilNextWatering($weatherData, $resultDays['daysUntilNextWatering']);
-
-        // Convert hours into days + hours for the delay
-        $daysAndHoursUntilNextWatering = $wateringStrategy->convertHoursToDaysAndHours($hoursUntilNextWatering);
-        
-        $user->plants()->attach($plant->id, ['city' => $city]);
-
-        // Dispatch the Laravel job to send the reminder
-        SendWateringReminder::dispatch($user, $plant->common_name)->delay(now()->addDays($daysAndHoursUntilNextWatering['days'])->addHours($daysAndHoursUntilNextWatering['hours']));
+        $daysAndHoursUntilNextWatering = $userPlantServiceInterface->addPlantToUser($user, $city, $plant, $weatherService, $wateringStrategy);
 
 
         return response()->json([

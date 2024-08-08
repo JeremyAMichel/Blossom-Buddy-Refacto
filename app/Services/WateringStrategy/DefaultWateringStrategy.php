@@ -4,7 +4,6 @@ namespace App\Services\WateringStrategy;
 
 use App\Interfaces\WateringStrategyInterface;
 use App\Models\Plant;
-use App\Models\User;
 
 class DefaultWateringStrategy implements WateringStrategyInterface
 {

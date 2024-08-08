@@ -3,7 +3,6 @@
 namespace App\Interfaces;
 
 use App\Models\Plant;
-use App\Models\User;
 
 interface WateringStrategyInterface
 {
