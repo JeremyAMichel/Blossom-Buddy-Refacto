@@ -19,7 +19,7 @@ class PlantService implements PlantServiceInterface
      */
     public function fetchAndStorePlants(PlantRepositoryInterface $plantRepository): void
     {
-        for ($id = 1; $id <= 50; $id++) {
+        for ($id = 101; $id <= 150; $id++) {
             $plantData = $this->fetchPlantData($id);
 
             if ($plantData && !empty($plantData)) {
