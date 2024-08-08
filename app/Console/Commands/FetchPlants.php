@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Interfaces\PlantRepositoryInterface;
 use App\Interfaces\PlantServiceInterface;
 use Illuminate\Console\Command;
 
@@ -23,12 +24,14 @@ class FetchPlants extends Command
 
 
     protected PlantServiceInterface $plantService;
+    protected PlantRepositoryInterface $plantRepository;
 
-    public function __construct(PlantServiceInterface $plantService)
+    public function __construct(PlantServiceInterface $plantService, PlantRepositoryInterface $plantRepository)
     {
         parent::__construct();
 
         $this->plantService = $plantService;
+        $this->plantRepository = $plantRepository;
     }
 
     /**
@@ -37,7 +40,7 @@ class FetchPlants extends Command
     public function handle()
     {
         $this->info('Fetching plants...');
-        $this->plantService->fetchAndStorePlants();
+        $this->plantService->fetchAndStorePlants($this->plantRepository);
         $this->info('Plants fetched and stored successfully.');
     }
 }

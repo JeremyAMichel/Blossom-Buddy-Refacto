@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Interfaces\PlantRepositoryInterface;
 use App\Interfaces\PlantServiceInterface;
 use Illuminate\Support\Facades\Http;
-use App\Models\Plant;
 use Illuminate\Support\Facades\Log;
 
 // Service appelé dans la commande FetchPlants
