@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Interfaces\PlantRepositoryInterface;
+use App\Interfaces\WateringStrategyInterface;
 use App\Interfaces\WeatherServiceInterface;
 use App\Jobs\SendWateringReminder;
-use App\Models\Plant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -82,7 +82,7 @@ class UserPlantController extends Controller
      *      )
      * )
      */
-    public function addPlantUser(Request $request, WeatherServiceInterface $weatherService, PlantRepositoryInterface $plantRepository): JsonResponse
+    public function addPlantUser(Request $request, WeatherServiceInterface $weatherService, PlantRepositoryInterface $plantRepository, WateringStrategyInterface $wateringStrategy): JsonResponse
     {
 
         $validated = $request->validate([
@@ -103,60 +103,26 @@ class UserPlantController extends Controller
 
         $city = $validated['city'];
 
-        // Extract watering benchmarks from the plant
-        $wateringBenchmark = $plant->watering_general_benchmark;
-        $unit = $wateringBenchmark['unit'];
-        $value = $wateringBenchmark['value'];
-
-        // Calculate the number of days until the next watering
-        $daysUntilNextWatering = 0;
-        if ($unit === 'days') {
-            $range = explode('-', $value);
-            $daysUntilNextWatering = (int) $range[0]; // Taking the lower bound of the range
-        } elseif ($unit === 'week') {
-            $range = explode('-', $value);
-            $daysUntilNextWatering = (int) $range[0] * 7; // Convert weeks to days
-        }
-
-        // Determine the number of days to pass to the weather service
-        $daysForWeatherService = $daysUntilNextWatering >= 5 ? 5 : $daysUntilNextWatering;
-
+        $resultDays = $wateringStrategy->calculateDaysForWeatherService($plant);
+        
         // Use the weather service to get the forecast for the city
-        $weatherData = $weatherService->getWeatherForecast($city, $daysForWeatherService);
+        $weatherData = $weatherService->getWeatherForecast($city, $resultDays['daysForWeatherService']);
 
-        // We will convert days into hours to be able to delay the job
-        $hoursUntilNextWatering = $daysUntilNextWatering * 24;
-
-        // For each day in the forecast, calculate a coefficient and apply it to the days until next watering
-        foreach ($weatherData as $day) {
-            $humidity = $day['avghumidity'];
-
-            // For eache 10% above 70%, we add 10% to daysUntilNextWatering
-            if ($humidity > 70) {
-                $tranchesAbove70 = floor(($humidity - 70) / 10) + 1;
-                $hoursUntilNextWatering += $hoursUntilNextWatering * (0.1 * $tranchesAbove70);
-            }
-            // For each 10% under 40%, we remove 10% to daysUntilNextWatering
-            elseif ($humidity < 40) {
-                $tranchesBelow40 = floor((40 - $humidity) / 10) - 1;
-                $hoursUntilNextWatering -= $hoursUntilNextWatering * (0.1 * $tranchesBelow40);
-            }
-        }
+        $hoursUntilNextWatering = $wateringStrategy->calculateHoursUntilNextWatering($weatherData, $resultDays['daysUntilNextWatering']);
 
         // Convert hours into days + hours for the delay
-        $days = floor($hoursUntilNextWatering / 24);
-        $hours = $hoursUntilNextWatering % 24;
-
+        $daysAndHoursUntilNextWatering = $wateringStrategy->convertHoursToDaysAndHours($hoursUntilNextWatering);
+        
         $user->plants()->attach($plant->id, ['city' => $city]);
 
         // Dispatch the Laravel job to send the reminder
-        SendWateringReminder::dispatch($user, $plant->common_name)->delay(now()->addDays($days)->addHours($hours));
+        SendWateringReminder::dispatch($user, $plant->common_name)->delay(now()->addDays($daysAndHoursUntilNextWatering['days'])->addHours($daysAndHoursUntilNextWatering['hours']));
 
 
         return response()->json([
             'message' => 'Plant added to user successfully',
-            'daysUntilNextWatering' => $days,
-            'hoursUntilNextWatering' => $hours
+            'daysUntilNextWatering' => $daysAndHoursUntilNextWatering['days'],
+            'hoursUntilNextWatering' => $daysAndHoursUntilNextWatering['hours']
         ], 200);
     }
 

@@ -17,6 +17,12 @@ class WeatherService implements WeatherServiceInterface
         $this->apiKey = env('API_WEATHERAPI_KEY');
     }
 
+    /**
+     * Fetches the weather forecast for a given city.
+     * @param string $city
+     * @param int $daysForWeatherService
+     * @return array
+     */
     public function getWeatherForecast(string $city, int $daysForWeatherService): array
     {
         $cacheKey = "weather_forecast_{$city}";
